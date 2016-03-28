@@ -1,19 +1,21 @@
 #!/bin/bash
 
-# reactivate-verizon-accounts - Reactivate accounts that Verizon generated
-#   false hard bounces for in October 2014.
+# reactivate-engine-bounces.sh - Reactivate accounts that AOL generated the
+#  following bounce message for between September 2015 and March 2016:
+#
+#  521 5.2.1 :  (CON:B1)  https://postmaster.aol.com/error-codes#554conb1
 
 # Exit on any failure
 set -o errexit
 
 # Variables
-temp_table="verizon__bounce_bad_addresses"
-temp_table_s3_subscribers="verizon__studio3_subscribers"
+temp_table="aol__bounce_bad_addresses"
+temp_table_s3_subscribers="aol__studio3_subscribers"
 export_dir="/var/hvmail/apache/htdocs/exports"
 psql="/var/hvmail/postgres/8.3/bin/psql -v ON_ERROR_STOP=1 -U greenarrow greenarrow"
-start_time="1413846000" # Mon, 20 Oct 2014 23:00:00 GMT / 18:00 CDT (1 hour before the first observed instance)
-end_time="1413945000" # Wed, 22 Oct 2014 02:30:00 GMT / 21:30 CDT (8 hours after the last observed instance)
-logfile="/var/hvmail/log/verizon_reactivation_engine.log"
+start_time="1441083600" # 2015-09-01 00:00 CDT (the day before the first observed instance)
+end_time="1459486800" # 2016-04-01 00:00 CDT (8 days after the hot patch was deployed. See README.md for details)
+logfile="/var/hvmail/log/aol_reactivation_engine.log"
 
 # Redirect output to the log file, unless the user has specified not to
 if [ "$SKIP_REDIRECTION" != "1" ]; then
@@ -21,7 +23,7 @@ if [ "$SKIP_REDIRECTION" != "1" ]; then
 fi
 function log() { echo "`date` $1"; }
 log "----------------------"
-log "Starting Verizon reactivation process"
+log "Starting AOL reactivation process"
 
 # Create $temp_table, and insert the addresses to reactivate into it
 log "Selecting bounces into temporary table"
@@ -32,8 +34,7 @@ echo "
   WHERE  type = 'h'
   AND    bouncetime >= $start_time
   AND    bouncetime <= $end_time
-  AND    text ILIKE '%550%alias%'
-  AND    email ILIKE '%@verizon.net'
+  AND    text ILIKE '%521 5.2.1 :  (CON:B1)  https://postmaster.aol.com/error-codes#554conb1'
 " | $psql
 
 # Create $export_dir
@@ -89,18 +90,17 @@ log "Exporting matching event table rows into $export_events_filename"
 echo "
   BEGIN;
 
-  CREATE TEMPORARY TABLE verizon__events AS
+  CREATE TEMPORARY TABLE aol__events AS
   SELECT *
   FROM   events
   WHERE  event_type = 'bounce_bad_address'
   AND    bounce_type = 'h'
   AND    event_time >= $start_time
   AND    event_time <= $end_time
-  AND    bounce_text ILIKE '%550%alias%'
-  AND    email ILIKE '%@verizon.net';
+  AND    bounce_text ILIKE '%521 5.2.1 :  (CON:B1)  https://postmaster.aol.com/error-codes#554conb1';
 
-  \\COPY verizon__events TO '$export_events_filename' WITH DELIMITER ',' CSV HEADER
-  DELETE FROM events WHERE id IN ( SELECT id FROM verizon__events );
+  \\COPY aol__events TO '$export_events_filename' WITH DELIMITER ',' CSV HEADER
+  DELETE FROM events WHERE id IN ( SELECT id FROM aol__events );
 
   COMMIT;
 " | $psql
