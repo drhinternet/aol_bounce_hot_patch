@@ -12,7 +12,7 @@ GreenArrow's bounce processor classified this as a hard bounce. However, the con
 
 ### Hot Patch Already Deployed
 
-On March 23, 2016 DRH pushed a hot patch out to in support GreenArrow Engine installations. This hot patch updates GreenArrow's bounce processor to correclty classify these bounces.
+On March 23, 2016 DRH pushed a hot patch out to in support GreenArrow Engine installations. This hot patch updates GreenArrow's bounce processor to correctly classify these bounces.
 
 There were a handful of installations that we were unable to hot patch on that day. We're contacting the owners of those installations directly to arrange to have the hot patch installed.
 
