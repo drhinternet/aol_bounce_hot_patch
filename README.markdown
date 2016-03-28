@@ -22,7 +22,13 @@ The hot patch that we deployed on March 23 did not update the records of subscri
 
 The repository contains code which can be used to reactivate these subscribers.
 
-Here's what to run to apply this hot patch:
+To calculate how many email addresses GreenArrow marked as bad due to this bounce, run:
+
+```
+echo "select count(1) from bounce_bad_addresses where type = 'h' and text like '%521 5.2.1 :  (CON:B1)  https://postmaster.aol.com/error-codes#554conb1'" | /var/hvmail/postgres/8.3/bin/psql -U greenarrow
+```
+
+To apply the hot patch, run:
 
 ```
 bash -c "$( curl -fsSL 'https://raw.githubusercontent.com/drhinternet/aol_bounce_hot_patch/master/run.sh' )"
